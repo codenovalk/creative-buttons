@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paper Plane Send · CodeNovaLK Mission 001</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one 9:16 recording frame, the button dead-centre, controls strip below */
+:root{
+  --stage:#07080d; --frame:#0b0d16; --ink:#e9ecf8; --muted:#8a90a8; --line:#232741;
+  --btn:#5b4bff; --btn2:#36d6ff; --ok:#2ee59d; --okdeep:#0d3527; --hot:#ff4fa3;
+  --display:"Unbounded",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--stage);color:var(--ink);font-family:var(--mono);margin:0}
+.wrap{min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:14px;padding-block:16px;padding-inline:16px}
+.frame{position:relative;height:min(78vh,820px);aspect-ratio:9/16;max-width:100%;background:radial-gradient(120% 70% at 50% 45%,#141836 0%,var(--frame) 60%);border-radius:14px;overflow:hidden;border:1px solid var(--line);display:grid;place-items:center;container-type:inline-size}
+.tag{position:absolute;left:0;right:0;bottom:6%;text-align:center;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);pointer-events:none}
+.tag b{color:var(--btn2);font-weight:600}
+.top{position:absolute;top:7%;left:0;right:0;text-align:center;font-family:var(--display);font-weight:800;font-size:clamp(18px,5.5cqw,28px);letter-spacing:-.01em;line-height:1.2;text-wrap:balance;padding-inline:16px}
+.top span{background:linear-gradient(90deg,var(--hot),var(--btn2));-webkit-background-clip:text;background-clip:text;color:transparent}
+canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+
+/* ---------- the button ---------- */
+.send{
+  position:relative; width:min(250px,70cqw); height:64px; padding:0; border:0; border-radius:999px; cursor:pointer;
+  background:linear-gradient(135deg,var(--btn),var(--btn2)); color:#fff;
+  font-family:var(--display); font-weight:600; font-size:18px;
+  box-shadow:0 10px 40px -8px color-mix(in srgb,var(--btn) 70%,transparent), inset 0 1px 0 rgba(255,255,255,.25);
+  transition:background .9s cubic-bezier(.22,1,.36,1), box-shadow .9s cubic-bezier(.22,1,.36,1), transform .2s ease;
+}
+.send:hover{transform:translateY(-2px)}
+.send:active{transform:scale(.97)}
+.send:focus-visible{outline:2px solid var(--btn2);outline-offset:6px}
+/* inner track clips the plane so it leaves through the button's own edge */
+.track{position:absolute;inset:0;border-radius:inherit;overflow:hidden;display:grid;place-items:center}
+.word{display:flex;letter-spacing:.14em}
+.word span{display:inline-block}
+.plane{position:absolute;left:50%;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;opacity:0;filter:drop-shadow(0 0 6px rgba(255,255,255,.7))}
+.result{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:12px;font-size:16px;letter-spacing:.04em;color:var(--ok);opacity:0;transform:translateX(-60%)}
+.ok-icon{width:30px;height:30px;flex:none;overflow:visible}
+#okDisc{fill:var(--ok);transform-origin:16px 16px;transform:scale(0)}
+#okRing{fill:none;stroke:var(--ok);stroke-width:2;stroke-dasharray:1;stroke-dashoffset:1;transform:rotate(-90deg);transform-origin:16px 16px}
+#okTick{fill:none;stroke:var(--okdeep);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1}
+#okText{display:inline-block}
+/* green border that traces around the button */
+.trace{position:absolute;inset:-5px;width:calc(100% + 10px);height:calc(100% + 10px);pointer-events:none;overflow:visible}
+.trace rect{fill:none;stroke:var(--ok);stroke-width:3;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;filter:drop-shadow(0 0 6px var(--ok))}
+.send.done{background:var(--okdeep);box-shadow:0 0 50px -10px var(--ok)}
+
+.controls{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.controls button{background:var(--frame);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font:inherit;font-size:13px;cursor:pointer}
+.controls button:hover{border-color:var(--btn2)}
+.controls button:focus-visible{outline:2px solid var(--btn2);outline-offset:2px}
+.hint{font-size:12px;color:var(--muted);text-align:center;max-width:52ch;line-height:1.6;margin:0}
+body.clean .controls,body.clean .hint{display:none}
+</style>
+
+<div class="wrap">
+  <div class="frame" id="frame">
+    <div class="top">Boring send button<br>vs <span>this one</span></div>
+    <canvas id="fx"></canvas>
+    <button class="send" id="send" aria-label="Send">
+      <span class="track">
+        <span class="word" id="word"><span>S</span><span>E</span><span>N</span><span>D</span></span>
+        <svg class="plane" id="plane" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.5 11.2 20.6 3.4c.8-.3 1.5.4 1.2 1.2l-7.8 18.1c-.3.8-1.5.8-1.8 0l-2.6-6.5-6.5-2.6c-.8-.3-.8-1.5 0-1.8Zm7.6 4.3 1.9 4.8 5.6-13.1-7.5 8.3Zm-1.3-1.3 8.3-7.5L4 12.3l4.8 1.9Z"/></svg>
+        <span class="result" id="result">
+          <svg class="ok-icon" viewBox="0 0 32 32" aria-hidden="true">
+            <circle id="okDisc" cx="16" cy="16" r="15"/>
+            <circle id="okRing" cx="16" cy="16" r="14" pathLength="1"/>
+            <path id="okTick" d="M9.5 16.5l4.5 4.5 8.5-9" pathLength="1"/>
+          </svg>
+          <span id="okText">Submitted</span>
+        </span>
+      </span>
+      <svg class="trace" aria-hidden="true"><rect id="rect" pathLength="1"/></svg>
+    </button>
+    <div class="tag">// HTML + CSS + <b>Web Animations API</b></div>
+  </div>
+  <div class="controls">
+    <button id="reset">Reset</button>
+    <button id="autoplay">Auto-loop: off</button>
+    <button id="clean">Recording mode</button>
+  </div>
+  <p class="hint">Click SEND: the letters fold into a paper plane and fly off, a green border traces the button, then a round check and "Submitted" slide in. Turn on Auto-loop, then Recording mode to record a clean clip. Press Esc to bring the controls back.</p>
+</div>
+
+<script>
+const btn=document.getElementById('send'),frame=document.getElementById('frame'),
+      word=document.getElementById('word'),letters=[...word.children],
+      plane=document.getElementById('plane'),result=document.getElementById('result'),
+      rect=document.getElementById('rect'),cv=document.getElementById('fx'),ctx=cv.getContext('2d');
+let busy=false,loop=false,bits=[],raf=null,anims=[];
+
+function size(){
+  const r=frame.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);
+  cv.width=r.width*d;cv.height=r.height*d;ctx.setTransform(d,0,0,d,0,0);
+  const b=btn.getBoundingClientRect(); // fit the trace rect to the pill
+  rect.setAttribute('x',2.5);rect.setAttribute('y',2.5);
+  rect.setAttribute('width',b.width+5);rect.setAttribute('height',b.height+5);
+  rect.setAttribute('rx',(b.height+5)/2);
+}
+size();addEventListener('resize',size);
+
+const A=(el,k,o)=>{const a=el.animate(k,{fill:'forwards',...o});anims.push(a);return a};
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* particles: plane trail + confetti */
+function trail(dur){
+  const fr=frame.getBoundingClientRect(),t0=performance.now();
+  (function sp(t){
+    if(t-t0>dur)return;
+    const r=plane.getBoundingClientRect(),br=btn.getBoundingClientRect();
+    if(r.left<br.right){bits.push({x:r.left-fr.left+4,y:r.top-fr.top+r.height/2+(Math.random()-.5)*6,vx:-Math.random()*.8,vy:(Math.random()-.4)*.5,life:1,s:2+Math.random()*2,c:Math.random()<.7?'#36d6ff':'#ffffff'});run()}
+    requestAnimationFrame(sp);
+  })(t0);
+}
+function confetti(){
+  const fr=frame.getBoundingClientRect(),br=btn.getBoundingClientRect();
+  const cx=br.left-fr.left+br.width/2,cy=br.top-fr.top+br.height/2,cols=['#2ee59d','#36d6ff','#ffd84f','#ff4fa3','#ffffff'];
+  for(let i=0;i<80;i++){const a=-Math.PI/2+(Math.random()-.5)*2.4,s=4+Math.random()*7;
+    bits.push({x:cx+(Math.random()-.5)*br.width*.8,y:cy,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,s:3+Math.random()*4,c:cols[i%5],rect:true,rot:Math.random()*6,vr:(Math.random()-.5)*.4})}
+  run();
+}
+function run(){if(!raf)raf=requestAnimationFrame(step)}
+function step(){
+  const fr=frame.getBoundingClientRect();ctx.clearRect(0,0,fr.width,fr.height);
+  bits=bits.filter(b=>b.life>0);
+  for(const b of bits){
+    b.x+=b.vx;b.y+=b.vy;
+    if(b.rect){b.vy+=.2;b.vx*=.98;b.rot+=b.vr;b.life-=.012}else b.life-=.035;
+    ctx.globalAlpha=Math.max(b.life,0);ctx.fillStyle=b.c;
+    if(b.rect){ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.rot);ctx.fillRect(-b.s/2,-b.s,b.s,b.s*2);ctx.restore()}
+    else{ctx.beginPath();ctx.arc(b.x,b.y,b.s*b.life,0,7);ctx.fill()}
+  }
+  ctx.globalAlpha=1;raf=bits.length?requestAnimationFrame(step):null;
+}
+
+// split "Submitted" into letters so they can arrive one after another
+const okText=document.getElementById('okText');
+okText.innerHTML=[...okText.textContent].map(c=>`<span style="display:inline-block;opacity:0">${c}</span>`).join('');
+const okLetters=[...okText.children];
+
+async function send(){
+  if(busy)return;busy=true;size();
+  const w=btn.getBoundingClientRect().width;
+
+  const inOut='cubic-bezier(.65,0,.35,1)', soft='cubic-bezier(.22,1,.36,1)';
+
+  // 1+2. SEND melts into the plane: letters drift inward and dissolve while the
+  // plane condenses out of the same blur, so the two overlap instead of swapping
+  letters.forEach((l,i)=>{
+    const off=(1.5-i)*16; // outer letters travel further toward the middle
+    A(l,[
+      {transform:'none',opacity:1,filter:'blur(0)'},
+      {transform:`translateX(${off*.5}px) scale(.85)`,opacity:.8,filter:'blur(1px)',offset:.4},
+      {transform:`translateX(${off}px) scale(.3,.5)`,opacity:0,filter:'blur(6px)'}
+    ],{duration:560,delay:Math.abs(1.5-i)*40,easing:inOut});
+  });
+  const glow='drop-shadow(0 0 6px rgba(255,255,255,.7))';
+  await A(plane,[
+    {opacity:0,transform:'rotate(-20deg) scale(.5)',filter:'blur(8px) '+glow},
+    {opacity:.6,transform:'rotate(20deg) scale(.85)',filter:'blur(3px) '+glow,offset:.45},
+    {opacity:1,transform:'rotate(45deg) scale(1)',filter:'blur(0) '+glow}
+  ],{duration:620,delay:260,easing:soft}).finished;
+  await wait(120);
+
+  // 3. pull back, then fly out the right edge  +  4. green border traces round
+  trail(800);
+  A(rect,[{strokeDashoffset:1},{strokeDashoffset:0}],{duration:1200,easing:inOut});
+  const flight=A(plane,[
+    {transform:'rotate(45deg) translate(0,0)',offset:0},
+    {transform:'rotate(45deg) translate(-10px,10px)',offset:.2},
+    {transform:`rotate(45deg) translate(${w*.42}px,${-w*.42}px)`}
+  ],{duration:850,easing:inOut});
+  // (rotate(45deg) turns the translate axis, so equal +x/-y moves it straight right)
+  await wait(650); // start the reveal while the plane is still leaving
+
+  // 5. "Submitted" flows in from the left: the row glides, each letter unblurs
+  // in turn, and the round check draws ring -> fill -> tick
+  btn.classList.add('done');btn.setAttribute('aria-label','Submitted');
+  A(result,[{transform:'translateX(-40%)',opacity:0},{transform:'translateX(0)',opacity:1}],{duration:1000,easing:soft});
+  okLetters.forEach((l,i)=>A(l,[
+    {opacity:0,transform:'translateX(-14px)',filter:'blur(5px)'},
+    {opacity:1,transform:'translateX(0)',filter:'blur(0)'}
+  ],{duration:700,delay:180+i*45,easing:soft}));
+  A(document.getElementById('okRing'),[{strokeDashoffset:1},{strokeDashoffset:0}],{duration:650,delay:100,easing:inOut});
+  A(document.getElementById('okDisc'),[{transform:'scale(0)',opacity:0},{transform:'scale(1)',opacity:1}],{duration:550,delay:600,easing:soft});
+  await A(document.getElementById('okTick'),[{strokeDashoffset:1},{strokeDashoffset:0}],{duration:450,delay:850,easing:inOut}).finished;
+  await flight.finished;
+  confetti();
+
+  if(loop){await wait(2000);if(loop){reset();await wait(600);send()}}
+}
+
+function reset(){
+  anims.forEach(a=>a.cancel());anims=[];
+  btn.classList.remove('done');btn.setAttribute('aria-label','Send');busy=false;
+}
+btn.addEventListener('click',()=>{if(btn.classList.contains('done')){reset();return}send()});
+document.getElementById('reset').onclick=reset;
+document.getElementById('autoplay').onclick=e=>{loop=!loop;e.target.textContent='Auto-loop: '+(loop?'on':'off');if(loop){reset();send()}};
+document.getElementById('clean').onclick=()=>document.body.classList.add('clean');
+addEventListener('keydown',e=>{if(e.key==='Escape')document.body.classList.remove('clean')});
+</script>
+</html>

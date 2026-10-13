@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Creative Buttons · CodeNovaLK</title>
+<meta name="description" content="Creative animated buttons built with pure HTML, CSS and JavaScript. Free code by CodeNovaLK.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Michroma&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --void:#000000; --hull:#17181C; --line:#2A2B31; --white:#F4F5F7; --orange:#FF5A1F; --dust:#8B8E96;
+  --display:"Michroma",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--void);color:var(--white);font-family:var(--mono);line-height:1.6}
+.wrap{max-width:960px;margin:0 auto;padding:56px 20px 72px;display:flex;flex-direction:column;gap:48px}
+header{display:flex;flex-direction:column;gap:14px}
+.status{font-size:13px;letter-spacing:.2em;color:var(--dust)}
+.status b{color:var(--orange);font-weight:600}
+h1{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(28px,6vw,48px);line-height:1.15;letter-spacing:.02em;text-wrap:balance}
+h1 span{color:var(--orange)}
+.lead{margin:0;color:var(--dust);max-width:60ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px}
+.card{background:var(--hull);border:1px solid var(--line);border-radius:18px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.tag{align-self:flex-start;font-weight:600;font-size:12px;letter-spacing:.16em;color:var(--void);background:var(--orange);border-radius:6px;padding:4px 8px}
+.card h2{margin:0;font-family:var(--display);font-weight:400;font-size:20px}
+.card p{margin:0;color:var(--dust);font-size:14px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:auto;padding-top:6px}
+.btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font:inherit;font-size:14px;font-weight:600;border-radius:10px;padding:10px 16px;border:1px solid var(--line);color:var(--white)}
+.btn.primary{background:var(--orange);border-color:var(--orange);color:var(--void)}
+.btn:hover{border-color:var(--orange)}
+.btn:focus-visible{outline:2px solid var(--orange);outline-offset:3px}
+.card.locked{border-style:dashed;background:transparent}
+.card.locked .tag{background:var(--line);color:var(--dust)}
+footer{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between;border-top:1px solid var(--line);padding-top:24px;font-size:13px;color:var(--dust)}
+footer a{color:var(--white)}
+footer a:hover{color:var(--orange)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="status">MISSION CONTROL · STATUS <b>ALL SYSTEMS GO</b></div>
+    <h1>CODE<span>NOVA</span> · Creative Buttons</h1>
+    <p class="lead">Animated buttons built with pure HTML, CSS and JavaScript. No libraries. Every button is a mission: open the demo, click it, then grab the code.</p>
+  </header>
+
+  <main class="grid">
+    <article class="card">
+      <span class="tag">MISSION 001</span>
+      <h2>Paper Plane Send</h2>
+      <p>The letters fold into a paper plane and fly off. A green border traces the button and "Submitted" slides in.</p>
+      <div class="actions">
+        <a class="btn primary" href="paper-plane-send-button.html">Launch demo →</a>
+        <a class="btn" href="https://github.com/codenovalk/creative-buttons/blob/main/paper-plane-send-button.html">View code</a>
+      </div>
+    </article>
+
+    <article class="card">
+      <span class="tag">MISSION 002</span>
+      <h2>Trash Can Delete</h2>
+      <p>The letters hop into a trash can, the lid slams shut with a puff of dust, and "Deleted" slides in.</p>
+      <div class="actions">
+        <a class="btn primary" href="trash-can-delete-button.html">Launch demo →</a>
+        <a class="btn" href="https://github.com/codenovalk/creative-buttons/blob/main/trash-can-delete-button.html">View code</a>
+      </div>
+    </article>
+
+    <article class="card locked">
+      <span class="tag">MISSION 003</span>
+      <h2>Classified</h2>
+      <p>Next launch in a few days. Follow @codenovalk so you don't miss it.</p>
+    </article>
+  </main>
+
+  <footer>
+    <span>© CodeNovaLK · Built in Sri Lanka</span>
+    <span>
+      <a href="https://www.tiktok.com/@codenovalk">TikTok</a> ·
+      <a href="https://www.youtube.com/@codenovalk">YouTube</a> ·
+      <a href="https://www.instagram.com/codenovalk">Instagram</a> ·
+      <a href="https://github.com/codenovalk">GitHub</a>
+    </span>
+  </footer>
+</div>
+</body>
+</html>

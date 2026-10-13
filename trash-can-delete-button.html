@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trash Can Delete · CodeNovaLK Mission 002</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: same series frame as the send button: 9:16 recording frame, button centred, controls below */
+:root{
+  --stage:#07080d; --frame:#0b0d16; --ink:#e9ecf8; --muted:#8a90a8; --line:#232741;
+  --danger:#ff3d5a; --danger2:#ff8a4d; --dangerdeep:#3a0c16; --soft:#ff8c9c; --hot:#ff4fa3; --cool:#36d6ff;
+  --display:"Unbounded",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--stage);color:var(--ink);font-family:var(--mono);margin:0}
+.wrap{min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:14px;padding-block:16px;padding-inline:16px}
+.frame{position:relative;height:min(78vh,820px);aspect-ratio:9/16;max-width:100%;background:radial-gradient(120% 70% at 50% 45%,#2a1220 0%,var(--frame) 60%);border-radius:14px;overflow:hidden;border:1px solid var(--line);display:grid;place-items:center;container-type:inline-size}
+.tag{position:absolute;left:0;right:0;bottom:6%;text-align:center;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);pointer-events:none}
+.tag b{color:var(--danger2);font-weight:600}
+.top{position:absolute;top:7%;left:0;right:0;text-align:center;font-family:var(--display);font-weight:800;font-size:clamp(18px,5.5cqw,28px);letter-spacing:-.01em;line-height:1.2;text-wrap:balance;padding-inline:16px}
+.top span{background:linear-gradient(90deg,var(--danger),var(--danger2));-webkit-background-clip:text;background-clip:text;color:transparent}
+canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+
+/* ---------- the button ---------- */
+.del{
+  position:relative; width:min(250px,70cqw); height:64px; padding:0; border:0; border-radius:999px; cursor:pointer;
+  background:linear-gradient(135deg,var(--danger),var(--danger2)); color:#fff;
+  font-family:var(--display); font-weight:600; font-size:18px;
+  box-shadow:0 10px 40px -8px color-mix(in srgb,var(--danger) 70%,transparent), inset 0 1px 0 rgba(255,255,255,.25);
+  transition:background .9s cubic-bezier(.22,1,.36,1), box-shadow .9s cubic-bezier(.22,1,.36,1), transform .2s ease;
+}
+.del:hover{transform:translateY(-2px)}
+.del:active{transform:scale(.97)}
+.del:focus-visible{outline:2px solid var(--danger2);outline-offset:6px}
+.inner{position:absolute;inset:0;display:grid;place-items:center}
+.word{display:flex;letter-spacing:.14em}
+.word span{display:inline-block}
+
+.can{position:absolute;right:22px;top:50%;width:26px;height:30px;margin-top:-16px;opacity:0;color:#fff;overflow:visible}
+.can .lid{transform-box:fill-box;transform-origin:0% 100%}
+.can .body,.can .lid{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.result{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:12px;font-size:16px;letter-spacing:.04em;color:var(--soft);opacity:0}
+.ok-icon{width:30px;height:30px;flex:none;overflow:visible}
+#okDisc{fill:var(--danger);transform-origin:16px 16px;transform:scale(0)}
+#okRing{fill:none;stroke:var(--danger);stroke-width:2;stroke-dasharray:1;stroke-dashoffset:1;transform:rotate(-90deg);transform-origin:16px 16px}
+#okTick{fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1}
+#okText{display:inline-block}
+
+.trace{position:absolute;inset:-5px;width:calc(100% + 10px);height:calc(100% + 10px);pointer-events:none;overflow:visible}
+.trace rect{fill:none;stroke:var(--danger);stroke-width:3;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;filter:drop-shadow(0 0 6px var(--danger))}
+.del.done{background:var(--dangerdeep);box-shadow:0 0 50px -10px var(--danger)}
+
+.controls{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.controls button{background:var(--frame);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font:inherit;font-size:13px;cursor:pointer}
+.controls button:hover{border-color:var(--danger2)}
+.controls button:focus-visible{outline:2px solid var(--danger2);outline-offset:2px}
+.hint{font-size:12px;color:var(--muted);text-align:center;max-width:52ch;line-height:1.6;margin:0}
+body.clean .controls,body.clean .hint{display:none}
+</style>
+
+<div class="wrap">
+  <div class="frame" id="frame">
+    <div class="top">Boring delete button<br>vs <span>this one</span></div>
+    <canvas id="fx"></canvas>
+    <button class="del" id="del" aria-label="Delete">
+      <span class="inner">
+        <span class="word" id="word"><span>D</span><span>E</span><span>L</span><span>E</span><span>T</span><span>E</span></span>
+        <svg class="can" id="can" viewBox="0 0 26 30" aria-hidden="true">
+          <g class="lid" id="lid"><path d="M3 8.5h20"/><path d="M10 8.5V6a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 16 6v2.5"/></g>
+          <g class="body" id="canBody"><path d="M5.5 11.5l1.4 14.2A2 2 0 0 0 8.9 27.5h8.2a2 2 0 0 0 2-1.8l1.4-14.2"/><path d="M10.5 15v8M15.5 15v8"/></g>
+        </svg>
+        <span class="result" id="result">
+          <svg class="ok-icon" viewBox="0 0 32 32" aria-hidden="true">
+            <circle id="okDisc" cx="16" cy="16" r="15"/>
+            <circle id="okRing" cx="16" cy="16" r="14" pathLength="1"/>
+            <path id="okTick" d="M9.5 16.5l4.5 4.5 8.5-9" pathLength="1"/>
+          </svg>
+          <span id="okText">Deleted</span>
+        </span>
+      </span>
+      <svg class="trace" aria-hidden="true"><rect id="rect" pathLength="1"/></svg>
+    </button>
+    <div class="tag">// HTML + CSS + <b>Web Animations API</b></div>
+  </div>
+  <div class="controls">
+    <button id="reset">Reset</button>
+    <button id="autoplay">Auto-loop: off</button>
+    <button id="clean">Recording mode</button>
+  </div>
+  <p class="hint">Click DELETE: a trash can rises, the letters hop in one by one, the lid slams shut and a red border traces the button, then a round check and "Deleted" slide in. Turn on Auto-loop, then Recording mode to record a clean clip. Press Esc to bring the controls back.</p>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const btn=$('del'),frame=$('frame'),letters=[...$('word').children],can=$('can'),lid=$('lid'),canBody=$('canBody'),
+      result=$('result'),rect=$('rect'),cv=$('fx'),ctx=cv.getContext('2d');
+let busy=false,loop=false,bits=[],raf=null,anims=[];
+const inOut='cubic-bezier(.65,0,.35,1)',soft='cubic-bezier(.22,1,.36,1)';
+
+// split "Deleted" so the letters can arrive one after another
+const okText=$('okText');
+okText.innerHTML=[...okText.textContent].map(c=>`<span style="display:inline-block;opacity:0">${c}</span>`).join('');
+const okLetters=[...okText.children];
+
+function size(){
+  const r=frame.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);
+  cv.width=r.width*d;cv.height=r.height*d;ctx.setTransform(d,0,0,d,0,0);
+  const b=btn.getBoundingClientRect();
+  rect.setAttribute('x',2.5);rect.setAttribute('y',2.5);
+  rect.setAttribute('width',b.width+5);rect.setAttribute('height',b.height+5);rect.setAttribute('rx',(b.height+5)/2);
+}
+size();addEventListener('resize',size);
+
+const A=(el,k,o)=>{const a=el.animate(k,{fill:'forwards',...o});anims.push(a);return a};
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const centre=el=>{const r=el.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}};
+
+/* particles */
+function puff(x,y,n,cols,up){
+  for(let i=0;i<n;i++){const a=up?-Math.PI/2+(Math.random()-.5)*2.2:Math.random()*Math.PI*2,s=1+Math.random()*(up?4:3);
+    bits.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,s:1.5+Math.random()*2.5,c:cols[i%cols.length],g:up?.08:.02})}
+  run();
+}
+function run(){if(!raf)raf=requestAnimationFrame(step)}
+function step(){
+  const fr=frame.getBoundingClientRect();ctx.clearRect(0,0,fr.width,fr.height);
+  bits=bits.filter(b=>b.life>0);
+  for(const b of bits){b.x+=b.vx;b.y+=b.vy;b.vy+=b.g;b.vx*=.97;b.life-=.022;
+    ctx.globalAlpha=Math.max(b.life,0);ctx.fillStyle=b.c;ctx.beginPath();ctx.arc(b.x,b.y,b.s*(.4+b.life*.6),0,7);ctx.fill()}
+  ctx.globalAlpha=1;raf=bits.length?requestAnimationFrame(step):null;
+}
+
+async function del(){
+  if(busy)return;busy=true;size();
+  const fr=frame.getBoundingClientRect();
+
+  // 1. the trash can rises in on the right, lid swings open
+  A(can,[{opacity:0,transform:'translateY(14px) scale(.6)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:450,easing:soft});
+  await wait(280);
+  await A(lid,[{transform:'rotate(0deg)'},{transform:'rotate(-38deg) translateY(-1px)'}],{duration:300,easing:soft}).finished;
+
+  // 2. letters hop into the can one by one, nearest first, on a curved path
+  const c=centre(can);
+  const order=[...letters].reverse();
+  order.forEach((l,i)=>{
+    const p=centre(l),dx=c.x-p.x,dy=c.y-p.y-4,h=26+i*4,kf=[];
+    for(let s=0;s<=6;s++){const t=s/6; // x moves steadily, y follows a parabola so it reads as a jump
+      kf.push({transform:`translate(${dx*t}px,${dy*t-4*h*t*(1-t)}px) rotate(${t*200}deg) scale(${1-t*.65})`,opacity:t>.85?0:1})}
+    A(l,kf,{duration:560,delay:i*110,easing:'linear'});
+    // the can gives a little bump as each letter lands
+    setTimeout(()=>A(canBody,[{transform:'scaleY(1)'},{transform:'scaleY(.9) translateY(1.5px)'},{transform:'scaleY(1)'}],{duration:180,easing:'ease-out',fill:'none'}),i*110+520);
+  });
+  await wait(order.length*110+500);
+
+  // 3. lid slams shut with a bounce, dust puffs out, can shakes; red border starts tracing
+  A(lid,[{transform:'rotate(-38deg)'},{transform:'rotate(8deg)',offset:.55},{transform:'rotate(-3deg)',offset:.8},{transform:'rotate(0deg)'}],{duration:420,easing:'ease-out'});
+  await wait(200);
+  puff(c.x-fr.left,c.y-fr.top-14,22,['#ffb3bd','#ff8a4d','#c9ccd8'],true);
+  A(can,[{transform:'rotate(0)'},{transform:'rotate(-8deg)'},{transform:'rotate(7deg)'},{transform:'rotate(-4deg)'},{transform:'rotate(0)'}],{duration:420,easing:'ease-in-out',composite:'add'});
+  A(rect,[{strokeDashoffset:1},{strokeDashoffset:0}],{duration:1200,easing:inOut});
+  await wait(520);
+
+  // 4. the can sinks away
+  A(can,[{opacity:1,transform:'translateY(0) scale(1)'},{opacity:0,transform:'translateY(16px) scale(.5)'}],{duration:450,easing:inOut});
+  await wait(250);
+
+  // 5. "Deleted" flows in from the left, round check draws ring -> fill -> tick
+  btn.classList.add('done');btn.setAttribute('aria-label','Deleted');
+  A(result,[{transform:'translateX(-40%)',opacity:0},{transform:'translateX(0)',opacity:1}],{duration:1000,easing:soft});
+  okLetters.forEach((l,i)=>A(l,[
+    {opacity:0,transform:'translateX(-14px)',filter:'blur(5px)'},{opacity:1,transform:'translateX(0)',filter:'blur(0)'}
+  ],{duration:700,delay:180+i*45,easing:soft}));
+  A($('okRing'),[{strokeDashoffset:1},{strokeDashoffset:0}],{duration:650,delay:100,easing:inOut});
+  A($('okDisc'),[{transform:'scale(0)',opacity:0},{transform:'scale(1)',opacity:1}],{duration:550,delay:600,easing:soft});
+  await A($('okTick'),[{strokeDashoffset:1},{strokeDashoffset:0}],{duration:450,delay:850,easing:inOut}).finished;
+  const b=centre(btn);puff(b.x-fr.left,b.y-fr.top,40,['#ff3d5a','#ff8a4d','#ffd0d6','#ffffff'],false);
+
+  if(loop){await wait(2000);if(loop){reset();await wait(600);del()}}
+}
+
+function reset(){anims.forEach(a=>a.cancel());anims=[];btn.classList.remove('done');btn.setAttribute('aria-label','Delete');busy=false}
+btn.addEventListener('click',()=>{if(btn.classList.contains('done')){reset();return}del()});
+$('reset').onclick=reset;
+$('autoplay').onclick=e=>{loop=!loop;e.target.textContent='Auto-loop: '+(loop?'on':'off');if(loop){reset();del()}};
+$('clean').onclick=()=>document.body.classList.add('clean');
+addEventListener('keydown',e=>{if(e.key==='Escape')document.body.classList.remove('clean')});
+</script>
+</html>
